@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# User ignores
+proxylist*
+teste.sh
+testa_cloudflare.sh
+FoxyProxy.json

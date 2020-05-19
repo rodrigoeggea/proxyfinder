@@ -8,26 +8,11 @@ import os
 import sys
 from pprint import pprint
 import time
+from Proxy import Proxy
 
 def truncate(number, decimals=0):
     multiplier = 10 ** decimals
-    return int(number * multiplier) / multiplier
-    
-class Proxy:
-    def __init__(self,ip,port,anon,country,iso):
-        self.ip=ip
-        self.port=str(port)
-        self.anon=anon
-        self.country=country
-        self.iso=iso
-        self.valid=''        
-        self.delay=''
-        self.ipport=f'{self.ip}:{self.port}'
-        
-    def __repr__(self):
-        return('%-22s %-15s %-10.2s %-5s \n' % (
-                self.ipport, self.country, self.delay, self.valid))
-        
+    return int(number * multiplier) / multiplier       
         
 def proxy_validate(proxy):
     proxy_address = 'http://' + proxy.ipport
@@ -49,52 +34,53 @@ def proxy_validate(proxy):
         #print(f'Proxy {proxy.ipport} not working.')
 
 def get_proxy_list():
+    # BAIXA A LISTA DE PROXIES
     try: 
         url = 'https://www.proxy-list.download/api/v0/get?l=en&t=http'
         r = requests.get(url)
         json_lst = r.json()
-        #pprint(json)
-        DICT      = json_lst[0]
-        UPDATED   = DICT.get('UPDATED')
-        UPDATEDAV = DICT.get('UPDATEDAV')
-        TOTAL     = DICT.get('TOTAL')
-        PAISES    = DICT.get('PAISES')
-        LISTA     = DICT.get('LISTA')
-        return LISTA
     except: 
         print('Não foi possível baixar lista de proxies...')
         exit()
+        
+    #pprint(json)
+    DICT      = json_lst[0]
+    UPDATED   = DICT.get('UPDATED')
+    UPDATEDAV = DICT.get('UPDATEDAV')
+    TOTAL     = DICT.get('TOTAL')
+    PAISES    = DICT.get('PAISES')
+    LISTA     = DICT.get('LISTA')
+        
+    # CARREGA LISTA DE PROXIES
+    # RETORNA UMA LISTA DE OBJETOS
+    proxyset = set()
+    for server in LISTA:
+        proxy = Proxy(server.get('IP'),
+                      server.get('PORT'),
+                      server.get('ANON'),
+                      server.get('COUNTRY'),
+                      server.get('ISO'))
+        #print('adicionado=',proxy)                            
+        proxyset.add(proxy)  
+    return proxyset
+
 #######################################
 #  MAIN
 #######################################
-
 if __name__ == '__main__':
    
     # Busca lista de proxy da internet
-    LISTA = get_proxy_list()  
+    proxylist = get_proxy_list()
 
-    # CARREGA LISTA DE PROXIES
-    proxylist = list()
-    for server in LISTA:
-        proxy = Proxy(
-            server.get('IP'),
-            server.get('PORT'),
-            server.get('ANON'),
-            server.get('COUNTRY'),
-            server.get('ISO'))
-        proxylist.append(proxy)
-        
     # TESTA OS PROXIES
     print('------------------------')
-    print(f'Testando proxies...    ')  
+    print('Testando proxies...     ')  
     print('------------------------')    
-    
+    print('Total=',len(proxylist))
+
+    # Cria um Pool de Threads para testar em paralelo
     futures = []
-#    with ThreadPoolExecutor(max_workers=10) as pool:
-#        for proxy in proxylist[0:10]:    
-#            future.append(pool.submit(proxy_validate,proxy))
-    
-    pool = ThreadPoolExecutor(max_workers=20)
+    pool = ThreadPoolExecutor(max_workers=50)
     for proxy in proxylist:
         futures.append(pool.submit(proxy_validate,proxy))
         
@@ -115,8 +101,7 @@ if __name__ == '__main__':
              (proxy.ipport, proxy.country, proxy.delay, proxy.anon))
     
     print('------------------------------------------------------------------')  
-    print(f' TOTAL DE PROXIES:   {len(proxylist)}')
-    print(f' PROXIES FUNCONANDO: {len(proxyvalid)}')
+    print(f' PROXIES FUNCIONANDO: {len(proxyvalid)} / {len(proxylist)} ')
     
     file = open('proxylist.txt','w+')
     for proxy in sortedbydelay:
