@@ -9,6 +9,7 @@ import sys
 from pprint import pprint
 import time
 from Proxy import Proxy
+from FoxyProxy import *
 
 def truncate(number, decimals=0):
     multiplier = 10 ** decimals
@@ -33,12 +34,28 @@ def proxy_validate(proxy):
         # print( e = sys.exc_info()[0])
         #print(f'Proxy {proxy.ipport} not working.')
 
+def get_proxy_list_clarketm():
+    try:
+        url='https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt'
+        txtlist = requests.get(url).text
+    except:
+        print('Não foi possível baixar lista de proxies do Clark...')
+        exit()
+    else:
+        proxyset = set()
+        lista = txtlist.split()
+        for proxy in lista:
+            ip = proxy.split(':')[0]
+            port = proxy.split(':')[1]
+            proxy = Proxy(ip,port,'','','')
+            proxyset.add(proxy)
+        return list(proxyset)   # set não tem indice, melhor converter em lista
+        
 def get_proxy_list():
-    # BAIXA A LISTA DE PROXIES
     try: 
         url = 'https://www.proxy-list.download/api/v0/get?l=en&t=http'
-        r = requests.get(url)
-        json_lst = r.json()
+        request = requests.get(url)
+        json_lst = request.json()
     except: 
         print('Não foi possível baixar lista de proxies...')
         exit()
@@ -55,22 +72,20 @@ def get_proxy_list():
     # RETORNA UMA LISTA DE OBJETOS
     proxyset = set()
     for server in LISTA:
-        proxy = Proxy(server.get('IP'),
-                      server.get('PORT'),
-                      server.get('ANON'),
-                      server.get('COUNTRY'),
-                      server.get('ISO'))
-        #print('adicionado=',proxy)                            
+        proxy = Proxy(server.get('IP'),server.get('PORT'),
+                      server.get('ANON'), server.get('COUNTRY'), server.get('ISO'))
+        #print('adicionado=',proxy)s
         proxyset.add(proxy)  
-    return proxyset
+    return list(proxyset)
 
 #######################################
-#  MAIN
+#             MAIN
 #######################################
 if __name__ == '__main__':
-   
+
     # Busca lista de proxy da internet
-    proxylist = get_proxy_list()
+    #proxylist = get_proxy_list()
+    proxylist = get_proxy_list_clarketm()
 
     # TESTA OS PROXIES
     print('------------------------')
@@ -111,3 +126,22 @@ if __name__ == '__main__':
     print('---------------------------------')
     print('  ARQUIVO SALVO: proxylist.txt   ')
     print('---------------------------------')
+    
+    foxyproxy = FoxyProxy()
+    for proxy in sortedbydelay:
+        proxyData = ProxyData()
+        proxyData.title = proxy.ipport
+        proxyData.address = proxy.ip
+        proxyData.port = proxy.port
+        foxyproxy.add_proxy(proxyData)
+    foxyproxy.save()
+    print('---------------------------------')
+    print('  ARQUIVO SALVO: FoxyProxy.json  ')
+    print('---------------------------------')
+
+        
+        
+    
+    
+    
+    

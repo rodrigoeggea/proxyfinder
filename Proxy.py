@@ -1,5 +1,6 @@
 class Proxy:
-    def __init__(self,ip,port,anon,country,iso):
+    def __init__(self, ip : str = None, port :str = None,
+                 anon : str = None, country : str = None,iso : str = None):
         self.ip=str(ip)
         self.port=str(port)
         self.anon=str(anon)
