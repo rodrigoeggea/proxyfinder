@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from concurrent.futures import ThreadPoolExecutor, wait, as_completed
+from bs4 import BeautifulSoup
 import urllib.request
 import urllib.parse
 import requests
@@ -34,7 +35,31 @@ def proxy_validate(proxy):
         # print( e = sys.exc_info()[0])
         #print(f'Proxy {proxy.ipport} not working.')
 
-def get_proxy_list_clarketm():
+
+def get_proxy_from_free_proxy(): 
+    url = 'https://free-proxy-list.net/'
+    header = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 Safari/537.36'}
+    page = request = requests.get(url, headers=header)
+    soup = BeautifulSoup(page.text, 'html.parser')
+    table = soup.find('table')
+    tbody = table.find('tbody')
+    rows = tbody.find_all('tr')
+    proxyset = set()  
+    for row in rows:
+        cols = row.find_all('td')
+        ip  =cols[0].text
+        port=cols[1].text
+        code=cols[2].text
+        country=cols[3].text
+        anon=cols[4].text
+        https=cols[6].text
+        time=cols[7].text
+        if https== 'no':
+            proxy = Proxy(ip,port,anon,country,'')  # ip, port, anon, country, iso
+            proxyset.add(proxy)
+    return list(proxyset)     
+
+def get_proxy_from_clarketm():
     try:
         url='https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt'
         txtlist = requests.get(url).text
@@ -85,7 +110,8 @@ if __name__ == '__main__':
 
     # Busca lista de proxy da internet
     #proxylist = get_proxy_list()
-    proxylist = get_proxy_list_clarketm()
+    #proxylist = get_proxy_list_clarketm()
+    proxylist = get_proxy_from_free_proxy()
 
     # TESTA OS PROXIES
     print('------------------------')
